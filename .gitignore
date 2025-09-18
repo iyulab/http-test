@@ -36,3 +36,5 @@ Thumbs.db
 tmp/
 temp/
 uploads/
+
+*.vsix

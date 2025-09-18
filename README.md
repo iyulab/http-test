@@ -1,36 +1,34 @@
 # http-test
 
-http-test is a powerful and user-friendly API testing library that allows you to easily write and execute API tests using simple .http files. With http-test, you can streamline your API testing process and ensure the reliability of your endpoints without writing complex test scripts.
+An API testing library that executes HTTP tests written in .http files with automatic assertion capabilities.
 
 ## VS Code Extension
 
-For an even easier experience, use the [http-test VS Code Extension](https://marketplace.visualstudio.com/items?itemName=iyulab.http-test). This extension provides seamless integration with Visual Studio Code, allowing you to run and manage your http-test files directly from the editor.
+Use the [http-test VS Code Extension](https://marketplace.visualstudio.com/items?itemName=iyulab.http-test) for integrated testing within your editor.
 
 ![VS Code Extension Screenshot](screenshot.png)
 
 ## Features
 
-- Write tests in easy-to-read .http files
-- Support for various HTTP methods (GET, POST, PUT, DELETE, PATCH)
-- Automatic assertion based on status codes
-- Custom assertions for headers, body content, and more
-- Variable management for dynamic request data
-- File upload testing support
-- Detailed test reports and summaries
+- **.http file support** - Standard HTTP file format
+- **Multiple HTTP methods** - GET, POST, PUT, DELETE, PATCH
+- **Automatic assertions** - Status codes, headers, response body
+- **Variable management** - Dynamic request data with JSONPath
+- **Custom assertions** - JavaScript-based validation functions
+- **File upload testing** - Multipart form data support
+- **Detailed reporting** - Test summaries with pass/fail status
 
 ## Installation
 
-Install http-test globally using npm:
-
 ```bash
-npm install @iyulab/http-test -g
+npm install -g @iyulab/http-test
 ```
 
-Once installed, run your tests with:
+## Usage
 
 ```bash
-http-test path/to/your/tests.http
-http-test path/to/your/tests.http --verbose
+http-test tests.http
+http-test tests.http --verbose
 ```
 
 ## Writing Tests
@@ -103,34 +101,33 @@ $.email: alice@example.com
 @newUserId = $.id
 ```
 
-### Custom Assertions with Scripts
+### Custom Assertions
 
-Write custom JavaScript functions for complex validations:
+JavaScript functions for complex validations:
 
 ```javascript
-// custom-assert.js
-module.exports = function(response, context) {
-  const body = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+// validation.js
+module.exports = function(context) {
+  const body = context.response.data;
+  const variables = context.variables;
 
-  if (body.id !== context.variables.newUserId) {
-    throw new Error("User ID mismatch");
+  if (body.id !== variables.newUserId) {
+    throw new Error("ID mismatch");
   }
 
-  if (!body.email.includes('@')) {
-    throw new Error("Invalid email format");
-  }
+  return body.email.includes('@');
 };
 ```
 
-Use the custom assertion in your .http file:
+Usage in .http files:
 
 ```http
-### Custom Assert user verification 
+### Verify user data
 GET {{host}}/users/{{newUserId}}
 
-#### Assert: Verify user format
-Status: 2xx
-_CustomAssert: ./custom-assert.js
+#### Assert: Validate response
+Status: 200
+_CustomAssert: ./validation.js
 ```
 
 ### File Uploads
@@ -146,23 +143,41 @@ Content-Disposition: form-data; name="file"; filename="example.txt"
 This is the content of the file.
 ```
 
-### Using External Variable Files
+### Variables
 
-Manage variables using a `variables.json` file:
+External variable file (`variables.json`):
 
 ```json
-// variables.json
 {
   "host": "http://localhost:3000",
-  "token": 123
+  "apiKey": "your-api-key"
 }
 ```
 
-Reference these variables in your .http test files:
+Usage in .http files:
 
 ```http
-@host = http://localhost:3000
-
-### GET all users
+### Get users with authentication
 GET {{host}}/users
+Authorization: Bearer {{apiKey}}
 ```
+
+## Configuration
+
+Create `http-test.config.json` for custom settings:
+
+```json
+{
+  "timeout": 30000,
+  "retry": 3,
+  "verbose": false
+}
+```
+
+## API Reference
+
+- **Status codes**: `200`, `2xx`, `404`
+- **Headers**: `Content-Type: application/json`
+- **JSONPath**: `$.data[0].id`, `$[*].name`
+- **Variables**: `@name = $.id`, `{{variable}}`
+- **Custom assertions**: `_CustomAssert: ./script.js`

@@ -1,16 +1,17 @@
 {
   "name": "http-test",
   "displayName": "http-test",
-  "description": "Runs HTTP tests on selected .http files. API testing library",
+  "description": "VS Code extension for running HTTP tests using @iyulab/http-test library with enhanced error handling and progress tracking",
   "publisher": "iyulab",
+  "pricing": "Free",
   "repository": {
     "type": "git",
-    "url": "https://github.com/iyulab-rnd/http-test"
+    "url": "https://github.com/iyulab/http-test"
   },
   "icon": "logo_128.png",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.104.0"
   },
   "categories": [
     "Testing"
@@ -60,6 +61,11 @@
           "light": "assets/light/test-verbose.svg",
           "dark": "assets/dark/test-verbose.svg"
         }
+      },
+      {
+        "command": "extension.http_test.stop",
+        "title": "Stop HTTP Test",
+        "icon": "$(stop)"
       }
     ],
     "menus": {
@@ -126,18 +132,20 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
+    "test:watch": "vscode-test --watch",
+    "package": "npx @vscode/vsce package",
     "publish": "npx @vscode/vsce publish"
   },
   "devDependencies": {
-    "@types/mime-types": "^2.1.4",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "22.x",
-    "@types/vscode": "^1.75.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1",
-    "eslint": "^9.8.0",
-    "typescript": "^5.5.4"
+    "@types/mime-types": "^3.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "24.x",
+    "@types/vscode": "^1.104.0",
+    "@typescript-eslint/eslint-plugin": "^8.44.0",
+    "@typescript-eslint/parser": "^8.44.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.35.0",
+    "typescript": "^5.9.2"
   }
 }

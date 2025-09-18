@@ -1,0 +1,17 @@
+### Test GET Request
+GET https://httpbin.org/get
+Accept: application/json
+
+### Test POST Request
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+    "name": "test",
+    "value": 123
+}
+
+### Assert Test
+GET https://httpbin.org/status/200
+
+> {% assert response.status === 200 %}

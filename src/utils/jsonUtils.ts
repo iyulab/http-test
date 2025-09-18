@@ -4,13 +4,16 @@ import { logVerbose, logError } from './logger';
 export class JsonUtils {
   static parseJson(body: string | undefined): object | undefined {
     if (!body) return undefined;
-    
-    // Remove any non-JSON content after the last closing brace
-    const jsonEndIndex = body.lastIndexOf('}');
+
+    // Remove any non-JSON content after the last closing brace or bracket
+    const objectEndIndex = body.lastIndexOf('}');
+    const arrayEndIndex = body.lastIndexOf(']');
+    const jsonEndIndex = Math.max(objectEndIndex, arrayEndIndex);
+
     if (jsonEndIndex !== -1) {
       body = body.substring(0, jsonEndIndex + 1);
     }
-    
+
     body = body.trim();
   
     try {

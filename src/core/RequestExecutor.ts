@@ -10,20 +10,14 @@ import fs from "fs";
 import path from "path";
 import https from "https";
 import { JsonUtils } from "../utils/jsonUtils";
+import { HttpTestConfig, loadConfig } from "../config";
 
 /**
  * Executes HTTP requests and processes responses.
  */
 export class RequestExecutor {
-  private serverCheckTimeout = 5000;
-  private requestTimeout = 10000;
-
-  // RequestExecutor 클래스 내부
-  private axiosInstance = axios.create({
-    httpsAgent: new https.Agent({
-      rejectUnauthorized: false,
-    }),
-  });
+  private config: HttpTestConfig;
+  private axiosInstance;
 
   /**
    * Creates an instance of RequestExecutor.
@@ -31,8 +25,18 @@ export class RequestExecutor {
    */
   constructor(
     private variableManager: VariableManager,
-    private baseDir: string
-  ) {}
+    private baseDir: string,
+    customConfig?: Partial<HttpTestConfig>
+  ) {
+    this.config = loadConfig(customConfig);
+
+    this.axiosInstance = axios.create({
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: this.config.security.rejectUnauthorized,
+      }),
+      timeout: this.config.timeouts.request,
+    });
+  }
 
   async execute(request: HttpRequest): Promise<HttpResponse> {
     const processedRequest = this.applyVariables(request);
@@ -84,7 +88,7 @@ export class RequestExecutor {
   private async checkServerStatus(url: string): Promise<void> {
     try {
       await this.axiosInstance.head(url, {
-        timeout: this.serverCheckTimeout,
+        timeout: this.config.timeouts.serverCheck,
       });
     } catch (error) {
       if (axios.isAxiosError(error) && !error.response) {
@@ -123,7 +127,7 @@ export class RequestExecutor {
       url,
       headers: requestHeaders,
       data,
-      timeout: this.requestTimeout,
+      timeout: this.config.timeouts.request,
       validateStatus: () => true,
     };
 

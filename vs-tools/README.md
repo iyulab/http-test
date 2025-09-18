@@ -1,49 +1,56 @@
-# http-test VS-Tool
+# http-test VS Code Extension
 
-http-test VS-Tool is a Visual Studio Code extension that makes it easy to use the [@iyulab/http-test](https://github.com/iyulab-rnd/http-test) library directly within your VS Code environment.
+VS Code extension for running HTTP tests using [@iyulab/http-test](https://github.com/iyulab/http-test) library with enhanced progress tracking and error handling.
+
+![http-test VS Code Extension](screenshot.png)
 
 ## Features
 
-- Run HTTP tests on .http files
-- Quick test execution via context menu
-- Real-time test results in VS Code's output panel
-
-## Screenshot
-
-![http-test VS-Tool in action](screenshot.png)
-
-## Requirements
-
-- Node.js must be installed ([Download Node.js](https://nodejs.org))
-
-## How to Use
-
-1. Open a .http file
-2. Right-click within the file to open the context menu
-3. Select the "Run HTTP Test" option
-4. View the test results in the output panel
-
-## Keyboard Shortcut
-
-- Windows/Linux: `Ctrl+Alt+T`
-- macOS: `Cmd+Alt+T`
-
-## About @iyulab/http-test Library
-
-This extension is built on top of the [@iyulab/http-test](https://github.com/iyulab-rnd/http-test) library. This library is a powerful tool for easily testing HTTP requests.
-
-Key features:
-- Support for HTTP methods (GET, POST, PUT, DELETE, etc.)
-- Variable support
-- Response validation
-- JSON schema validation
-- Environment configuration
-
-For more details, please refer to the [@iyulab/http-test GitHub repository](https://github.com/iyulab-rnd/http-test).
+- **One-click execution** - Run tests directly from .http files
+- **Progress tracking** - Real-time progress with cancellation support
+- **Enhanced output** - Colored test results with success/failure indicators
+- **Status bar integration** - Quick access when editing .http files
+- **Error handling** - Detailed error messages and troubleshooting
+- **Test result parsing** - Automatic pass/fail detection and notifications
 
 ## Installation
 
-1. Open VS Code
-2. Open the Extensions marketplace (Ctrl+Shift+X)
-3. Search for "http-test VS-Tool"
-4. Click the "Install" button
+1. Open VS Code Extensions (Ctrl+Shift+X)
+2. Search for "http-test"
+3. Install the extension
+
+## Usage
+
+### Running Tests
+
+- **Context menu**: Right-click in .http file → "Run HTTP Test"
+- **Keyboard**: `Ctrl+Alt+T` (Windows/Linux) or `Cmd+Alt+T` (macOS)
+- **Status bar**: Click the HTTP Test icon when editing .http files
+- **Command palette**: `Ctrl+Shift+P` → "Run HTTP Test"
+
+### Available Commands
+
+- **Run HTTP Test** - Execute tests with standard output
+- **Run HTTP Test (Verbose)** - Execute with detailed logging
+- **Stop HTTP Test** - Cancel running tests
+
+### Progress Tracking
+
+- Real-time progress notifications
+- Cancellable test execution
+- Success/failure status indicators
+- Test result summaries
+
+## Requirements
+
+- VS Code 1.104.0 or higher
+- Node.js installed ([Download](https://nodejs.org))
+
+## About @iyulab/http-test
+
+Built on the [@iyulab/http-test](https://github.com/iyulab/http-test) library for:
+- HTTP method support (GET, POST, PUT, DELETE, PATCH)
+- Variable and environment management
+- Response validation and assertions
+- Custom JavaScript validation functions
+- File upload testing support

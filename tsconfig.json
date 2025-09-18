@@ -20,7 +20,7 @@
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "types",
+    "outDir": "dist",
 
     "forceConsistentCasingInFileNames": true
   },

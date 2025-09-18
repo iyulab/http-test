@@ -1,11 +1,39 @@
 import FormData from "form-data";
 
+// Core types
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
+
+export type AssertionType = "status" | "header" | "body" | "custom" | "response-time" | "json-schema";
+
 export interface RunOptions {
   verbose?: boolean;
   var?: string;
+  parallel?: boolean;
+  maxConcurrency?: number;
+  timeout?: number;
+  bail?: boolean;
 }
 
-export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+export interface VariableUpdate {
+  key: string;
+  value: string;
+}
+
+export interface Assertion {
+  type: AssertionType;
+  key?: string;
+  value?: unknown | ((value: unknown) => boolean) | string;
+  description?: string;
+  timeout?: number;
+}
+
+export interface TestItem {
+  type: "Assert";
+  name?: string;
+  assertions: Assertion[];
+  timeout?: number;
+  retries?: number;
+}
 
 export interface HttpRequest {
   name: string;
@@ -18,15 +46,12 @@ export interface HttpRequest {
   expectError?: boolean;
 }
 
-export interface VariableUpdate {
-  key: string;
-  value: string;
-}
-
-export interface TestItem {
-  type: "Assert";
-  name?: string;
-  assertions: Assertion[];
+export interface HttpResponse<T = unknown> {
+  status: number;
+  statusText?: string;
+  headers: Record<string, string>;
+  data: T;
+  executionTime?: number;
 }
 
 export interface TestResult {
@@ -34,21 +59,19 @@ export interface TestResult {
   passed: boolean;
   error?: Error;
   statusCode?: number;
+  executionTime?: number;
+  retryCount?: number;
 }
 
 export interface TestSummary {
   totalTests: number;
   passedTests: number;
   failedTests: number;
+  skippedTests?: number;
+  totalExecutionTime?: number;
   results: TestResult[];
-}
-
-export type AssertionType = "status" | "header" | "body" | "custom";
-
-export interface Assertion {
-  type: AssertionType;
-  key?: string;
-  value?: unknown | ((value: unknown) => boolean) | string;
+  startTime?: Date;
+  endTime?: Date;
 }
 
 export interface Variables {
@@ -61,12 +84,6 @@ export interface VariableManager {
   setVariable(key: string, value: string | number | boolean): void;
   getVariable(key: string): string | number | boolean | undefined;
   getAllVariables(): Variables;
-}
-
-export interface HttpResponse {
-  status: number;
-  headers: Record<string, string>;
-  data: unknown;
 }
 
 export interface CustomValidatorContext {
@@ -95,3 +112,6 @@ export enum LogLevel {
   VERBOSE,
   PLAIN,
 }
+
+// Re-export from other modules for enhanced types
+export * from './parser';

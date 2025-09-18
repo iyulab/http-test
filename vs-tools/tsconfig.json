@@ -6,9 +6,12 @@
       "lib": ["ES2022"],
       "sourceMap": true,
       "rootDir": "src",
-      "strict": true
+      "strict": true,
+      "skipLibCheck": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true
     },
     "include": ["src/**/*"],
-    "exclude": ["node_modules", "out"]
+    "exclude": ["node_modules", "out", "../node_modules/@types/jest"]
   }
   
