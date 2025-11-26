@@ -9,7 +9,7 @@
     "url": "https://github.com/iyulab/http-test"
   },
   "icon": "logo_128.png",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "engines": {
     "vscode": "^1.106.0"
   },

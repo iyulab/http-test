@@ -54,11 +54,53 @@ function commandExists(command: string): boolean {
 }
 
 /**
+ * Find the http-test package path in npm global or local node_modules
+ */
+function findHttpTestPackage(workspaceRoot: string): string | null {
+    // 1. Check local node_modules
+    const localPkgPath = path.join(workspaceRoot, 'node_modules', '@iyulab', 'http-test', 'dist', 'program.cjs');
+    if (fs.existsSync(localPkgPath)) {
+        return localPkgPath;
+    }
+
+    // 2. Check global npm directory
+    try {
+        const npmPrefix = execSync('npm config get prefix', { encoding: 'utf8' }).trim();
+        const globalPaths = [
+            // Windows: %APPDATA%\npm\node_modules
+            path.join(npmPrefix, 'node_modules', '@iyulab', 'http-test', 'dist', 'program.cjs'),
+            // Unix-like: /usr/local/lib/node_modules
+            path.join(npmPrefix, 'lib', 'node_modules', '@iyulab', 'http-test', 'dist', 'program.cjs')
+        ];
+
+        for (const globalPath of globalPaths) {
+            if (fs.existsSync(globalPath)) {
+                return globalPath;
+            }
+        }
+    } catch {
+        // npm config failed, continue
+    }
+
+    return null;
+}
+
+/**
  * Find the best way to execute http-test
- * Priority: 1. Global install, 2. Local node_modules, 3. npx
+ * Priority: 1. Direct node execution (most reliable), 2. Global command, 3. npx fallback
  */
 function findExecutionMethod(workspaceRoot: string): ExecutionConfig | null {
-    // 1. Check global installation
+    // 1. Try to find the package and run with node directly (most reliable on Windows)
+    const pkgPath = findHttpTestPackage(workspaceRoot);
+    if (pkgPath) {
+        return {
+            command: 'node',
+            args: [pkgPath],
+            method: pkgPath.includes('node_modules/@iyulab') ? 'local' : 'global'
+        };
+    }
+
+    // 2. Check global installation via command
     if (commandExists('http-test')) {
         return {
             command: 'http-test',
@@ -67,22 +109,11 @@ function findExecutionMethod(workspaceRoot: string): ExecutionConfig | null {
         };
     }
 
-    // 2. Check local node_modules
-    const localBinPath = path.join(workspaceRoot, 'node_modules', '.bin', 'http-test');
-    const localBinPathCmd = localBinPath + (process.platform === 'win32' ? '.cmd' : '');
-    if (fs.existsSync(localBinPathCmd) || fs.existsSync(localBinPath)) {
-        return {
-            command: fs.existsSync(localBinPathCmd) ? localBinPathCmd : localBinPath,
-            args: [],
-            method: 'local'
-        };
-    }
-
-    // 3. Check if npx is available
-    if (commandExists('npx')) {
+    // 3. Fallback: Use npx with explicit package execution
+    if (commandExists('npx') && commandExists('node')) {
         return {
             command: 'npx',
-            args: ['-y', '@iyulab/http-test'],
+            args: ['--yes', '--package', '@iyulab/http-test', 'http-test'],
             method: 'npx'
         };
     }
