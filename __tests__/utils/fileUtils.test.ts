@@ -1,4 +1,4 @@
-import { readFile, writeFile, fileExists } from '../../src/utils/fileUtils';
+import { readFile, fileExists, loadVariables } from '../../src/utils/fileUtils';
 import * as fs from 'fs/promises';
 
 jest.mock('fs/promises');
@@ -27,19 +27,19 @@ describe('fileUtils', () => {
     });
   });
 
-  describe('writeFile', () => {
-    test('should write file content successfully', async () => {
-      mockedFs.writeFile.mockResolvedValue(undefined);
+  describe('loadVariables', () => {
+    test('should load JSON variables successfully', async () => {
+      const variables = { baseUrl: 'http://localhost', token: 'abc123' };
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(variables));
 
-      await writeFile('/test/output.txt', 'content to write');
-      expect(mockedFs.writeFile).toHaveBeenCalledWith('/test/output.txt', 'content to write', 'utf-8');
+      const result = await loadVariables('/test/variables.json');
+      expect(result).toEqual(variables);
     });
 
-    test('should throw error when file cannot be written', async () => {
-      const error = new Error('Permission denied');
-      mockedFs.writeFile.mockRejectedValue(error);
+    test('should throw error for invalid JSON', async () => {
+      mockedFs.readFile.mockResolvedValue('invalid json');
 
-      await expect(writeFile('/test/readonly.txt', 'content')).rejects.toThrow('Permission denied');
+      await expect(loadVariables('/test/invalid.json')).rejects.toThrow();
     });
   });
 

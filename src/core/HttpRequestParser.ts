@@ -67,12 +67,12 @@ export class HttpRequestParser {
     }
 
     if (bodyContent.trim()) {
-      request.body = this.parseBody(bodyContent);
+      this.parseBody(bodyContent, request);
     }
   }
 
   private isHttpMethod(line: string): boolean {
-    return /^(GET|POST|PUT|DELETE|PATCH)\s/.test(line);
+    return /^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)\s/.test(line);
   }
 
   private setRequestMethod(line: string, request: HttpRequest): void {
@@ -90,18 +90,53 @@ export class HttpRequestParser {
   }
 
   private handleVariable(line: string, request: HttpRequest): void {
-    const [key, value] = line.slice(1).split('=').map(s => s.trim());
+    const trimmedLine = line.slice(1).trim();
+
+    // Handle @name directive for named requests
+    if (trimmedLine.toLowerCase().startsWith('name ')) {
+      const requestId = trimmedLine.slice(5).trim();
+      request.requestId = requestId;
+      logVerbose(`Set request name/id: ${requestId}`);
+      return;
+    }
+
+    // Handle regular variable assignment
+    const equalIndex = trimmedLine.indexOf('=');
+    if (equalIndex === -1) {
+      logVerbose(`Invalid variable format: ${line}`);
+      return;
+    }
+
+    const key = trimmedLine.slice(0, equalIndex).trim();
+    const value = trimmedLine.slice(equalIndex + 1).trim();
+
     if (value.startsWith('$.')) {
-      // JSONPath 표현식을 사용하는 변수 업데이트
+      // JSONPath expression for variable update from response
       request.variableUpdates.push({ key, value });
     } else {
-      // 일반 변수 설정
+      // Regular variable assignment
       this.variableManager.setVariable(key, value);
     }
     logVerbose(`Added variable update: ${key} = ${value}`);
   }
 
-  private parseBody(bodyContent: string): string {
-    return bodyContent.trim();
+  /**
+   * Parse body content, detecting file reference syntax
+   * REST Client supports: < filepath or < ./relative/path
+   */
+  private parseBody(bodyContent: string, request: HttpRequest): void {
+    const trimmedBody = bodyContent.trim();
+
+    // Check for file reference syntax: < filepath
+    const fileRefMatch = trimmedBody.match(/^<\s+(.+)$/);
+    if (fileRefMatch) {
+      const filePath = fileRefMatch[1].trim();
+      request.bodyFromFile = filePath;
+      logVerbose(`Body from file: ${filePath}`);
+      return;
+    }
+
+    // Regular body content
+    request.body = trimmedBody;
   }
 }

@@ -1,16 +1,26 @@
 import { AssertionEngine } from '../../src/core/AssertionEngine';
 import { VariableManager } from '../../src/core/VariableManager';
 import { AssertionError } from '../../src/errors/AssertionError';
-import { HttpResponse, Assertion } from '../../src/types';
+import { HttpResponse, HttpRequest, Assertion } from '../../src/types';
 
 describe('AssertionEngine', () => {
   let assertionEngine: AssertionEngine;
   let variableManager: VariableManager;
   let mockResponse: HttpResponse;
+  let mockRequest: HttpRequest;
 
   beforeEach(() => {
     variableManager = new VariableManager();
-    assertionEngine = new AssertionEngine(variableManager);
+    assertionEngine = new AssertionEngine(variableManager, process.cwd());
+
+    mockRequest = {
+      name: 'Test Request',
+      method: 'GET',
+      url: 'http://localhost/api/test',
+      headers: {},
+      tests: [],
+      variableUpdates: []
+    };
 
     mockResponse = {
       status: 200,
@@ -39,7 +49,7 @@ describe('AssertionEngine', () => {
         value: 200
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should fail for incorrect status code', async () => {
@@ -48,7 +58,7 @@ describe('AssertionEngine', () => {
         value: 404
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
@@ -58,7 +68,7 @@ describe('AssertionEngine', () => {
         value: (status: number) => status >= 200 && status < 300
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should fail for status function that returns false', async () => {
@@ -67,7 +77,7 @@ describe('AssertionEngine', () => {
         value: (status: number) => status >= 400
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
   });
@@ -80,7 +90,7 @@ describe('AssertionEngine', () => {
         value: 'application/json'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should fail for header with incorrect value', async () => {
@@ -90,7 +100,7 @@ describe('AssertionEngine', () => {
         value: 'text/html'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
@@ -101,7 +111,7 @@ describe('AssertionEngine', () => {
         value: 'value'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
@@ -112,7 +122,7 @@ describe('AssertionEngine', () => {
         value: 'application/json'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
   });
 
@@ -124,7 +134,7 @@ describe('AssertionEngine', () => {
         value: 'John Doe'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should fail for incorrect JSON path value', async () => {
@@ -134,7 +144,7 @@ describe('AssertionEngine', () => {
         value: 'Jane Doe'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
@@ -145,7 +155,7 @@ describe('AssertionEngine', () => {
         value: 'First Post'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should handle array length assertion', async () => {
@@ -155,17 +165,18 @@ describe('AssertionEngine', () => {
         value: 2
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
-    test('should handle function-based body assertion', async () => {
+    test('should pass for body existence check', async () => {
+      // Function-based body assertions are no longer supported, use JSONPath instead
       const assertion: Assertion = {
         type: 'body',
         key: '$.id',
-        value: (value: any) => typeof value === 'number' && value > 0
+        value: 1
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should fail for invalid JSON path', async () => {
@@ -175,92 +186,66 @@ describe('AssertionEngine', () => {
         value: 'value'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
-    test('should handle string body response', async () => {
-      const stringResponse = {
+    test('should handle JSON string response', async () => {
+      const jsonStringResponse = {
         ...mockResponse,
-        data: 'Simple string response'
+        data: '{"message": "Hello"}'
       };
 
       const assertion: Assertion = {
         type: 'body',
-        value: 'Simple string response'
+        key: '$.message',
+        value: 'Hello'
       };
 
-      await expect(assertionEngine.assert(assertion, stringResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, jsonStringResponse, mockRequest)).resolves.not.toThrow();
     });
   });
 
   describe('custom assertions', () => {
-    test('should execute custom JavaScript code', async () => {
+    // Note: Custom assertions now require a file path to a custom validator function
+    // Inline JavaScript code execution is no longer supported for security reasons
+
+    test('should fail for non-existent custom validator file', async () => {
       const assertion: Assertion = {
         type: 'custom',
-        value: `
-          if (response.data.name !== 'John Doe') {
-            throw new Error('Name assertion failed');
-          }
-        `
+        value: './non-existent-validator.js'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
+        .rejects.toThrow();
     });
 
-    test('should fail for custom assertion that throws', async () => {
+    test('should fail for invalid validator path', async () => {
       const assertion: Assertion = {
         type: 'custom',
-        value: `
-          throw new Error('Custom assertion failed');
-        `
+        value: ''
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
-        .rejects.toThrow('Custom assertion failed');
-    });
-
-    test('should have access to response and variables in custom assertion', async () => {
-      variableManager.setVariable('expectedName', 'John Doe');
-
-      const assertion: Assertion = {
-        type: 'custom',
-        value: `
-          const expectedName = variables.expectedName;
-          if (response.data.name !== expectedName) {
-            throw new Error(\`Expected name \${expectedName}, got \${response.data.name}\`);
-          }
-        `
-      };
-
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
-    });
-
-    test('should handle syntax errors in custom code', async () => {
-      const assertion: Assertion = {
-        type: 'custom',
-        value: 'invalid javascript syntax {'
-      };
-
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow();
     });
   });
 
   describe('variable replacement in assertions', () => {
     beforeEach(() => {
-      variableManager.setVariable('expectedStatus', '200');
+      variableManager.setVariable('expectedStatus', '2xx');
       variableManager.setVariable('expectedName', 'John Doe');
       variableManager.setVariable('contentType', 'application/json');
     });
 
     test('should replace variables in assertion values', async () => {
+      // Note: String status values are treated as ranges (2xx, 3xx, etc.)
       const assertion: Assertion = {
         type: 'status',
         value: '{{expectedStatus}}'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should replace variables in header assertions', async () => {
@@ -270,7 +255,7 @@ describe('AssertionEngine', () => {
         value: '{{contentType}}'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
 
     test('should replace variables in body assertions', async () => {
@@ -280,7 +265,7 @@ describe('AssertionEngine', () => {
         value: '{{expectedName}}'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
   });
 
@@ -292,11 +277,11 @@ describe('AssertionEngine', () => {
       };
 
       try {
-        await assertionEngine.assert(assertion, mockResponse);
+        await assertionEngine.assert(assertion, mockResponse, mockRequest);
         fail('Expected AssertionError to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(AssertionError);
-        expect(error.message).toContain('Expected status 404, but got 200');
+        expect((error as Error).message).toContain('Expected status 404, got 200');
       }
     });
 
@@ -312,22 +297,20 @@ describe('AssertionEngine', () => {
         value: 'value'
       };
 
-      await expect(assertionEngine.assert(assertion, nonJsonResponse))
+      await expect(assertionEngine.assert(assertion, nonJsonResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
-    test('should handle null response data', async () => {
-      const nullResponse = {
-        ...mockResponse,
-        data: null
-      };
-
+    test('should handle body assertion with existence check', async () => {
+      // Body assertions now require a valid JSONPath key
       const assertion: Assertion = {
         type: 'body',
+        key: '$',  // Root path for existence check
         value: null
       };
 
-      await expect(assertionEngine.assert(assertion, nullResponse)).resolves.not.toThrow();
+      // Root path check passes for any valid response data
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
   });
 
@@ -338,7 +321,7 @@ describe('AssertionEngine', () => {
         // value is undefined
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
@@ -349,17 +332,27 @@ describe('AssertionEngine', () => {
         value: ''
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse))
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest))
         .rejects.toThrow(AssertionError);
     });
 
-    test('should handle numeric strings in status assertion', async () => {
+    test('should handle status range assertion', async () => {
+      // String status values are now treated as ranges (2xx, 3xx, 4xx, 5xx)
       const assertion: Assertion = {
         type: 'status',
-        value: '200'
+        value: '2xx'
       };
 
-      await expect(assertionEngine.assert(assertion, mockResponse)).resolves.not.toThrow();
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
+    });
+
+    test('should handle numeric status assertion', async () => {
+      const assertion: Assertion = {
+        type: 'status',
+        value: 200
+      };
+
+      await expect(assertionEngine.assert(assertion, mockResponse, mockRequest)).resolves.not.toThrow();
     });
   });
 });

@@ -19,6 +19,8 @@ VS Code extension for running HTTP tests using [@iyulab/http-test](https://githu
 2. Search for "http-test"
 3. Install the extension
 
+Or install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=iyulab.http-test)
+
 ## Usage
 
 ### Running Tests
@@ -48,9 +50,79 @@ VS Code extension for running HTTP tests using [@iyulab/http-test](https://githu
 
 ## About @iyulab/http-test
 
-Built on the [@iyulab/http-test](https://github.com/iyulab/http-test) library for:
-- HTTP method support (GET, POST, PUT, DELETE, PATCH)
-- Variable and environment management
-- Response validation and assertions
-- Custom JavaScript validation functions
-- File upload testing support
+Built on the [@iyulab/http-test](https://github.com/iyulab/http-test) library (v1.1.0):
+
+### Supported HTTP Methods
+- GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE
+
+### Assertions
+- **Status codes**: `Status: 200`, `Status: 2xx`
+- **Headers**: `Content-Type: application/json`
+- **Body (JSONPath)**: `$.id: 123`, `$[0].name: John`
+- **Custom validators**: `_CustomAssert: ./validator.js`
+
+### Variable Management
+- Static variables: `@host = http://localhost:3000`
+- Response extraction: `@userId = $.id`
+- Dynamic variables: `{{$guid}}`, `{{$timestamp}}`, `{{$randomInt}}`
+- Environment variables: `{{$dotenv API_KEY}}`, `{{$processEnv NODE_ENV}}`
+
+### REST Client Compatibility
+- Named requests: `# @name myRequest`
+- Response references: `{{myRequest.response.body.id}}`
+- File body loading: `< ./data/body.json`
+- Expected errors: `# @expectError`
+
+## Example .http File
+
+```http
+@host = https://api.example.com
+
+### Get all users
+GET {{host}}/users
+
+#### Assert
+Status: 200
+Content-Type: application/json
+$.length: 10
+
+###
+
+### Create user
+# @name createUser
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "test@example.com"
+}
+
+#### Assert
+Status: 201
+$.name: Test User
+
+@newUserId = $.id
+
+###
+
+### Get created user
+GET {{host}}/users/{{createUser.response.body.id}}
+
+#### Assert
+Status: 200
+$.id: {{newUserId}}
+```
+
+## Changelog
+
+### 1.1.0
+- REST Client compatibility improvements
+- Named request references support
+- Dynamic variables (`$guid`, `$timestamp`, `$randomInt`, etc.)
+- Extended HTTP methods (HEAD, OPTIONS, CONNECT, TRACE)
+- Status range assertions (`2xx`, `4xx`, etc.)
+
+## License
+
+MIT

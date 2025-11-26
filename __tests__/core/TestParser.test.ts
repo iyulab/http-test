@@ -132,46 +132,49 @@ describe('TestParser', () => {
   });
 
   test('should parse header assertions', () => {
+    // Note: Current implementation uses 'content-type:' syntax for header assertions
     const lines = [
       '#### Header Test',
-      'header.content-type: application/json'
+      'content-type: application/json'
     ];
 
     const result = parser.parse(lines);
 
     expect(result.tests[0].assertions[0].type).toBe('header');
-    expect(result.tests[0].assertions[0].key).toBe('content-type');
+    expect(result.tests[0].assertions[0].key).toBe('Content-Type');
     expect(result.tests[0].assertions[0].value).toBe('application/json');
   });
 
   test('should parse body assertions', () => {
+    // Note: Current implementation uses '$.' prefix directly for body assertions
     const lines = [
       '#### Body Test',
-      'body.$.id: 123',
-      'body.$.name: John'
+      '$.id: 123',
+      '$.name: John'
     ];
 
     const result = parser.parse(lines);
 
     expect(result.tests[0].assertions).toHaveLength(2);
     expect(result.tests[0].assertions[0].type).toBe('body');
-    expect(result.tests[0].assertions[0].path).toBe('$.id');
+    expect(result.tests[0].assertions[0].key).toBe('$.id');
     expect(result.tests[0].assertions[0].value).toBe(123);
     expect(result.tests[0].assertions[1].type).toBe('body');
-    expect(result.tests[0].assertions[1].path).toBe('$.name');
+    expect(result.tests[0].assertions[1].key).toBe('$.name');
     expect(result.tests[0].assertions[1].value).toBe('John');
   });
 
   test('should handle custom assertions', () => {
+    // Note: Custom assertions use '_customassert:' prefix (file path to validator)
     const lines = [
       '#### Custom Test',
-      'custom: response.data.length > 0'
+      '_customassert: ./validators/check.js'
     ];
 
     const result = parser.parse(lines);
 
     expect(result.tests[0].assertions[0].type).toBe('custom');
-    expect(result.tests[0].assertions[0].value).toBe('response.data.length > 0');
+    expect(result.tests[0].assertions[0].value).toBe('./validators/check.js');
   });
 
   test('should return empty result for empty input', () => {

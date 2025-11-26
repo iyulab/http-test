@@ -1,7 +1,7 @@
 import FormData from "form-data";
 
 // Core types
-export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS" | "CONNECT" | "TRACE";
 
 export type AssertionType = "status" | "header" | "body" | "custom" | "response-time" | "json-schema";
 
@@ -44,6 +44,10 @@ export interface HttpRequest {
   tests: TestItem[];
   variableUpdates: VariableUpdate[];
   expectError?: boolean;
+  /** Named request identifier for REST Client @name directive */
+  requestId?: string;
+  /** File path for body content (REST Client < filepath syntax) */
+  bodyFromFile?: string;
 }
 
 export interface HttpResponse<T = unknown> {
@@ -87,7 +91,7 @@ export interface VariableManager {
 }
 
 export interface CustomValidatorContext {
-  request: HttpRequest;
+  request?: HttpRequest;
   variables: Variables;
 }
 
@@ -95,15 +99,6 @@ export type CustomValidatorFunction = (
   response: HttpResponse,
   context: CustomValidatorContext
 ) => void;
-
-export interface FileUtils {
-  readFile(filePath: string): Promise<string>;
-  loadVariables(filePath: string): Promise<Variables>;
-}
-
-export interface AssertionEngine {
-  assert(assertion: Assertion, response: HttpResponse): Promise<void>;
-}
 
 export enum LogLevel {
   INFO,
@@ -113,5 +108,5 @@ export enum LogLevel {
   PLAIN,
 }
 
-// Re-export from other modules for enhanced types
-export * from './parser';
+// Re-export parse options
+export type { ParseOptions } from './parser';

@@ -63,6 +63,12 @@ export class TestManager {
     logRequestStart(request);
     try {
       const response = await this.requestExecutor.execute(request);
+
+      // Store response for named requests (REST Client @name directive support)
+      if (request.requestId) {
+        this.variableManager.storeNamedResponse(request.requestId, response);
+      }
+
       await this.responseProcessor.process(response, request.variableUpdates);
       const testResults = await this.runTests(request, response);
       for (const result of testResults) {

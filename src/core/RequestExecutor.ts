@@ -61,6 +61,21 @@ export class RequestExecutor {
   }
 
   private applyVariables(request: HttpRequest): HttpRequest {
+    let body = request.body;
+
+    // Handle body from file reference (REST Client < filepath syntax)
+    if (request.bodyFromFile) {
+      const filePath = this.variableManager.replaceVariables(request.bodyFromFile);
+      const absolutePath = path.resolve(this.baseDir, filePath);
+
+      if (!fs.existsSync(absolutePath)) {
+        throw new RequestError(`Body file not found: ${absolutePath}`);
+      }
+
+      body = fs.readFileSync(absolutePath, 'utf-8');
+      logVerbose(`Loaded body from file: ${absolutePath}`);
+    }
+
     return {
       ...request,
       url: this.variableManager.replaceVariables(request.url),
@@ -71,9 +86,9 @@ export class RequestExecutor {
         ])
       ),
       body:
-        typeof request.body === "string"
-          ? this.variableManager.replaceVariables(request.body)
-          : request.body,
+        typeof body === "string"
+          ? this.variableManager.replaceVariables(body)
+          : body,
     };
   }
 

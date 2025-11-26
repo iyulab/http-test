@@ -20,10 +20,34 @@ export class HttpFileParser {
   }
 
   private removeComments(content: string): string {
-    return content.split('\n').filter(line => {
+    // Step 1: Remove block comments (/* ... */) and replace with empty string
+    let processed = content.replace(/\/\*[\s\S]*?\*\//g, '');
+
+    // Step 2: Filter line comments (# and //) and empty lines left by block comment removal
+    const lines = processed.split('\n');
+    const filteredLines: string[] = [];
+
+    for (const line of lines) {
       const trimmedLine = line.trim();
-      return !trimmedLine.startsWith('#') || trimmedLine.startsWith('###') || trimmedLine.startsWith('####');
-    }).join('\n');
+
+      // Keep lines that start with ### or #### (request/test separators)
+      if (trimmedLine.startsWith('###') || trimmedLine.startsWith('####')) {
+        filteredLines.push(line);
+        continue;
+      }
+      // Remove lines that start with # (single line comment)
+      if (trimmedLine.startsWith('#')) {
+        continue;
+      }
+      // Remove lines that start with // (single line comment)
+      if (trimmedLine.startsWith('//')) {
+        continue;
+      }
+      // Keep all other lines (including empty lines for body separation)
+      filteredLines.push(line);
+    }
+
+    return filteredLines.join('\n');
   }
 
   private splitIntoSections(content: string): string[] {

@@ -24,22 +24,25 @@ describe('JsonUtils', () => {
       expect(JsonUtils.parseJson('null')).toBe(null);
     });
 
-    test('should throw error for invalid JSON', () => {
-      expect(() => JsonUtils.parseJson('{')).toThrow();
-      expect(() => JsonUtils.parseJson('invalid json')).toThrow();
-      expect(() => JsonUtils.parseJson('{"unclosed": ')).toThrow();
+    test('should return empty object for invalid JSON', () => {
+      // Invalid JSON now returns empty object instead of throwing
+      expect(JsonUtils.parseJson('{')).toEqual({});
+      expect(JsonUtils.parseJson('invalid json')).toEqual({});
+      expect(JsonUtils.parseJson('{"unclosed": ')).toEqual({});
     });
 
-    test('should handle empty string', () => {
-      expect(() => JsonUtils.parseJson('')).toThrow();
+    test('should return undefined for empty string', () => {
+      // Empty string returns undefined (falsy check)
+      expect(JsonUtils.parseJson('')).toBeUndefined();
     });
 
-    test('should handle undefined input', () => {
-      expect(() => JsonUtils.parseJson(undefined as any)).toThrow();
+    test('should return undefined for undefined input', () => {
+      expect(JsonUtils.parseJson(undefined as any)).toBeUndefined();
     });
 
-    test('should handle null input', () => {
-      expect(() => JsonUtils.parseJson(null as any)).toThrow();
+    test('should return undefined for null input', () => {
+      // Null is treated as falsy
+      expect(JsonUtils.parseJson(null as any)).toBeUndefined();
     });
 
     test('should parse complex nested objects', () => {

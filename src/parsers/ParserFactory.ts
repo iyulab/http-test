@@ -5,7 +5,6 @@ import { MultipartFormDataParser } from './MultipartFormDataParser';
 import { PlainTextParser } from './PlainTextParser';
 import { XmlParser } from './XmlParser';
 import { UrlEncodedParser } from './UrlEncodedParser';
-import { FileUploadParser } from './FileUploadParser';
 
 export class ParserFactory {
   static createParser(contentType: string, context: ParserContext): ContentTypeParser {
@@ -20,10 +19,7 @@ export class ParserFactory {
       return new XmlParser(context);
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
       return new UrlEncodedParser();
-    } else if (contentType.includes('multipart/form-data')) {
-      return new FileUploadParser();
     }
-    // 기본 파서
     logVerbose(`Using default PlainTextParser for content-type: ${contentType}`);
     return new PlainTextParser(context);
   }

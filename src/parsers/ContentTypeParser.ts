@@ -1,4 +1,4 @@
-import { HttpRequest, VariableManager } from '../types';
+import { VariableManager } from '../types';
 
 export interface ContentTypeParser {
   parseBody(body: string, boundary?: string): unknown;
@@ -7,6 +7,5 @@ export interface ContentTypeParser {
 }
 
 export interface ParserContext {
-  request: HttpRequest;
   variableManager: VariableManager;
 }
