@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-11-30
+
+### Added
+- **OAuth2 Authentication Support**
+  - OAuth2Provider with client_credentials, password, refresh_token grants
+  - Automatic token caching and refresh
+  - Full RFC 6749 compliance
+
+- **JSON Schema Validation**
+  - JsonSchemaHandler for response validation
+  - Inline schema support: `_JsonSchema: { "type": "object", ... }`
+  - File-based schema: `_JsonSchema: ./schema.json`
+  - Draft-07 and formats support via ajv
+
+- **Variable Management System**
+  - VariableScope with hierarchical scoping (request > file > runtime > environment > system)
+  - Priority-based variable resolution
+  - Scope chain support for complex scenarios
+
+- **Performance Module**
+  - ParallelExecutor: Concurrent HTTP request execution with configurable concurrency limit
+  - RequestCache: TTL-based caching with LRU eviction and cache statistics
+  - DiagnosticReporter: Structured logging, timing metrics, and export formats
+
+- **Enhanced Dynamic Variables**
+  - Improved DynamicVariableResolver with better format handling
+  - Date offset support: `{{$datetime iso8601 1 day}}`
+
+### Changed
+- Refactored internal architecture for better testability
+- Improved TypeScript type exports with `export type` for isolatedModules
+
+### Technical
+- 891 tests passing
+- 52 test suites
+- New dependencies: nock (testing), ajv, ajv-formats (JSON Schema)
+
 ## [1.1.0] - 2024-11-26
 
 ### Added

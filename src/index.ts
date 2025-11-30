@@ -24,3 +24,9 @@ export * from './pipeline';
 
 // Plugins
 export * from './plugins';
+
+// Variables
+export * from './variables';
+
+// Performance
+export * from './performance';

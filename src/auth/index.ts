@@ -15,3 +15,4 @@ export type { AuthRegistrationOptions } from './AuthRegistry';
 export { BasicAuthProvider } from './BasicAuthProvider';
 export { BearerTokenProvider } from './BearerTokenProvider';
 export { DigestAuthProvider } from './DigestAuthProvider';
+export { OAuth2Provider } from './OAuth2Provider';
