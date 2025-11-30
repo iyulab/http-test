@@ -63,7 +63,12 @@ export class HttpFileParser {
         this.handleGlobalVariables(section);
       } else {
         const request = requestParser.parse(section);
-        requests.push(request);
+        // Skip requests without a valid URL (empty request separators)
+        if (request.url && request.url.trim() !== '') {
+          requests.push(request);
+        } else {
+          logVerbose(`Skipping empty request section: ${request.name || '(unnamed)'}`);
+        }
       }
     }
 

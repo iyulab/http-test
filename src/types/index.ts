@@ -35,6 +35,24 @@ export interface TestItem {
   retries?: number;
 }
 
+export interface ParsedScript {
+  type: 'inline' | 'file';
+  content?: string;
+  path?: string;
+}
+
+/**
+ * Authentication configuration for a request
+ */
+export interface AuthConfig {
+  type: 'basic' | 'bearer' | 'digest' | 'oauth2' | string;
+  username?: string;
+  password?: string;
+  token?: string;
+  /** Additional auth-specific options */
+  [key: string]: unknown;
+}
+
 export interface HttpRequest {
   name: string;
   method: HttpMethod;
@@ -48,6 +66,12 @@ export interface HttpRequest {
   requestId?: string;
   /** File path for body content (REST Client < filepath syntax) */
   bodyFromFile?: string;
+  /** Pre-request scripts (< {% %} or < filepath.js) */
+  preRequestScripts?: ParsedScript[];
+  /** Response handler scripts (> {% %} or > filepath.js) */
+  responseHandlers?: ParsedScript[];
+  /** Authentication configuration */
+  auth?: AuthConfig;
 }
 
 export interface HttpResponse<T = unknown> {
@@ -56,6 +80,8 @@ export interface HttpResponse<T = unknown> {
   headers: Record<string, string>;
   data: T;
   executionTime?: number;
+  /** Response time in milliseconds (alias for executionTime) */
+  time?: number;
 }
 
 export interface TestResult {
@@ -65,6 +91,8 @@ export interface TestResult {
   statusCode?: number;
   executionTime?: number;
   retryCount?: number;
+  /** HTTP response data for displaying in UI */
+  response?: HttpResponse;
 }
 
 export interface TestSummary {

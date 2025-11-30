@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import { HttpRequest, HttpResponse } from "../types";
 import { VariableManager } from "./VariableManager";
 import { convertAxiosResponse } from "../utils/httpUtils";
@@ -11,6 +11,7 @@ import path from "path";
 import https from "https";
 import { JsonUtils } from "../utils/jsonUtils";
 import { HttpTestConfig, loadConfig } from "../config";
+import { CookieJar } from "./CookieJar";
 
 /**
  * Executes HTTP requests and processes responses.
@@ -18,17 +19,23 @@ import { HttpTestConfig, loadConfig } from "../config";
 export class RequestExecutor {
   private config: HttpTestConfig;
   private axiosInstance;
+  private cookieJar: CookieJar;
 
   /**
    * Creates an instance of RequestExecutor.
    * @param variableManager - The VariableManager instance to use.
+   * @param baseDir - Base directory for resolving file paths.
+   * @param customConfig - Optional custom configuration.
+   * @param cookieJar - Optional CookieJar for automatic cookie management.
    */
   constructor(
     private variableManager: VariableManager,
     private baseDir: string,
-    customConfig?: Partial<HttpTestConfig>
+    customConfig?: Partial<HttpTestConfig>,
+    cookieJar?: CookieJar
   ) {
     this.config = loadConfig(customConfig);
+    this.cookieJar = cookieJar || new CookieJar();
 
     this.axiosInstance = axios.create({
       httpsAgent: new https.Agent({
@@ -36,6 +43,13 @@ export class RequestExecutor {
       }),
       timeout: this.config.timeouts.request,
     });
+  }
+
+  /**
+   * Get the CookieJar instance
+   */
+  getCookieJar(): CookieJar {
+    return this.cookieJar;
   }
 
   async execute(request: HttpRequest): Promise<HttpResponse> {
@@ -114,11 +128,24 @@ export class RequestExecutor {
     }
   }
 
-  private async sendRequest(request: HttpRequest) {
+  private async sendRequest(request: HttpRequest): Promise<AxiosResponse> {
     const { method, url, headers, body } = request;
 
     let data = body;
     let requestHeaders = { ...headers };
+
+    // Add cookies from CookieJar
+    const cookieHeader = this.cookieJar.getCookieHeader(url);
+    if (cookieHeader) {
+      // Merge with existing Cookie header if present
+      const existingCookie = requestHeaders["Cookie"] || requestHeaders["cookie"];
+      if (existingCookie) {
+        requestHeaders["Cookie"] = `${existingCookie}; ${cookieHeader}`;
+      } else {
+        requestHeaders["Cookie"] = cookieHeader;
+      }
+      logVerbose(`Added cookies to request: ${cookieHeader}`);
+    }
 
     const contentType = headers["Content-Type"] || headers["content-type"];
     if (contentType) {
@@ -151,7 +178,24 @@ export class RequestExecutor {
       `Sending request with config: ${JSON.stringify(loggableConfig, null, 2)}`
     );
 
-    return this.axiosInstance(config);
+    const response = await this.axiosInstance(config);
+
+    // Store cookies from response
+    this.processCookiesFromResponse(response, url);
+
+    return response;
+  }
+
+  private processCookiesFromResponse(response: AxiosResponse, requestUrl: string): void {
+    const setCookieHeaders = response.headers['set-cookie'];
+    if (setCookieHeaders) {
+      if (Array.isArray(setCookieHeaders)) {
+        this.cookieJar.setCookies(setCookieHeaders, requestUrl);
+      } else {
+        this.cookieJar.setCookie(setCookieHeaders, requestUrl);
+      }
+      logVerbose(`Stored ${Array.isArray(setCookieHeaders) ? setCookieHeaders.length : 1} cookie(s) from response`);
+    }
   }
 
   private parseJsonBody(body: string | undefined): object | undefined {

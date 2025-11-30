@@ -1,23 +1,43 @@
-import { HttpRequest, HttpMethod } from "../types";
+import { HttpRequest } from "../types";
 import { logVerbose } from "../utils/logger";
 import { VariableManager } from "./VariableManager";
 import { TestParser } from "./TestParser";
+import {
+  ScriptBlockParser,
+  VariableLineParser,
+  RequestLineParser,
+} from "../parsers";
 
 export class HttpRequestParser {
   private variableManager: VariableManager;
   private testParser: TestParser;
+  private scriptBlockParser: ScriptBlockParser;
+  private variableLineParser: VariableLineParser;
+  private requestLineParser: RequestLineParser;
 
   constructor(variableManager: VariableManager) {
     this.variableManager = variableManager;
     this.testParser = new TestParser(variableManager);
+    this.scriptBlockParser = new ScriptBlockParser();
+    this.variableLineParser = new VariableLineParser();
+    this.requestLineParser = new RequestLineParser();
   }
 
   parse(section: string): HttpRequest {
     const lines = section.split('\n');
     const request = this.initializeRequest(lines[0]);
-    
-    const [requestLines, testLines] = this.splitRequestAndTestLines(lines.slice(1));
-    
+
+    // Parse scripts using ScriptBlockParser
+    const scripts = this.scriptBlockParser.parseAllScripts(section);
+    request.preRequestScripts = scripts.preRequestScripts;
+    request.responseHandlers = scripts.responseHandlers;
+
+    // Remove script blocks from lines before parsing request parts
+    const cleanedSection = this.scriptBlockParser.removeScriptBlocks(section);
+    const cleanedLines = cleanedSection.split('\n');
+
+    const [requestLines, testLines] = this.splitRequestAndTestLines(cleanedLines.slice(1));
+
     this.parseRequestLines(requestLines, request);
     const { tests, variableUpdates } = this.testParser.parse(testLines);
     request.tests = tests;
@@ -34,6 +54,8 @@ export class HttpRequestParser {
       headers: {},
       tests: [],
       variableUpdates: [],
+      preRequestScripts: [],
+      responseHandlers: [],
     };
   }
 
@@ -48,20 +70,26 @@ export class HttpRequestParser {
   private parseRequestLines(lines: string[], request: HttpRequest): void {
     let isParsingBody = false;
     let bodyContent = '';
+    let hasSeenMethod = false;
 
     for (const line of lines) {
       if (line.trim() === '') {
-        isParsingBody = true;
+        // Only switch to body parsing mode after we've seen the HTTP method
+        // Empty lines before the method line should be skipped
+        if (hasSeenMethod) {
+          isParsingBody = true;
+        }
         continue;
       }
 
       if (isParsingBody) {
         bodyContent += line + '\n';
-      } else if (line.startsWith('@')) {
+      } else if (this.variableLineParser.isVariableLine(line)) {
         this.handleVariable(line, request);
-      } else if (this.isHttpMethod(line)) {
+      } else if (this.requestLineParser.isMethodLine(line)) {
         this.setRequestMethod(line, request);
-      } else if (line.includes(':')) {
+        hasSeenMethod = true;
+      } else if (this.requestLineParser.isHeaderLine(line)) {
         this.handleHeader(line, request);
       }
     }
@@ -71,53 +99,52 @@ export class HttpRequestParser {
     }
   }
 
-  private isHttpMethod(line: string): boolean {
-    return /^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|CONNECT|TRACE)\s/.test(line);
-  }
-
   private setRequestMethod(line: string, request: HttpRequest): void {
-    const [method, url] = line.split(/\s+/);
-    request.method = method as HttpMethod;
-    request.url = this.variableManager.replaceVariables(url.trim());
-    logVerbose(`Set method: ${request.method}, URL: ${request.url}`);
+    const result = this.requestLineParser.parseMethodLine(line);
+    if (result) {
+      request.method = result.method;
+      request.url = this.variableManager.replaceVariables(result.url);
+      logVerbose(`Set method: ${request.method}, URL: ${request.url}`);
+    }
   }
 
   private handleHeader(line: string, request: HttpRequest): void {
-    const [key, ...valueParts] = line.split(':');
-    const value = valueParts.join(':').trim();
-    request.headers[key.trim()] = this.variableManager.replaceVariables(value);
-    logVerbose(`Added header: ${key.trim()}: ${request.headers[key.trim()]}`);
+    const result = this.requestLineParser.parseHeaderLine(line);
+    if (result) {
+      request.headers[result.key] = this.variableManager.replaceVariables(result.value);
+      logVerbose(`Added header: ${result.key}: ${request.headers[result.key]}`);
+    }
   }
 
   private handleVariable(line: string, request: HttpRequest): void {
-    const trimmedLine = line.slice(1).trim();
+    const result = this.variableLineParser.parse(line);
 
-    // Handle @name directive for named requests
-    if (trimmedLine.toLowerCase().startsWith('name ')) {
-      const requestId = trimmedLine.slice(5).trim();
-      request.requestId = requestId;
-      logVerbose(`Set request name/id: ${requestId}`);
-      return;
+    switch (result.type) {
+      case 'name':
+        if (result.requestId) {
+          request.requestId = result.requestId;
+          logVerbose(`Set request name/id: ${result.requestId}`);
+        }
+        break;
+
+      case 'jsonpath':
+        if (result.key && result.value) {
+          request.variableUpdates.push({ key: result.key, value: result.value });
+          logVerbose(`Added variable update: ${result.key} = ${result.value}`);
+        }
+        break;
+
+      case 'variable':
+        if (result.key && result.value !== undefined) {
+          this.variableManager.setVariable(result.key, result.value);
+          logVerbose(`Set variable: ${result.key} = ${result.value}`);
+        }
+        break;
+
+      case 'invalid':
+        logVerbose(`Invalid variable format: ${line}`);
+        break;
     }
-
-    // Handle regular variable assignment
-    const equalIndex = trimmedLine.indexOf('=');
-    if (equalIndex === -1) {
-      logVerbose(`Invalid variable format: ${line}`);
-      return;
-    }
-
-    const key = trimmedLine.slice(0, equalIndex).trim();
-    const value = trimmedLine.slice(equalIndex + 1).trim();
-
-    if (value.startsWith('$.')) {
-      // JSONPath expression for variable update from response
-      request.variableUpdates.push({ key, value });
-    } else {
-      // Regular variable assignment
-      this.variableManager.setVariable(key, value);
-    }
-    logVerbose(`Added variable update: ${key} = ${value}`);
   }
 
   /**

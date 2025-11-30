@@ -38,3 +38,6 @@ temp/
 uploads/
 
 *.vsix
+
+# Local
+.serena/
