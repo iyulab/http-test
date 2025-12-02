@@ -49,7 +49,7 @@ http-test uses a simple syntax for defining API tests in .http files.
 
 ### Basic Request
 
-```http
+```md
 ### GET all users
 GET {{host}}/users
 ```
@@ -58,7 +58,7 @@ GET {{host}}/users
 
 Check the status code of the response:
 
-```http
+```md
 ### GET all users
 GET {{host}}/users
 
@@ -68,7 +68,7 @@ Status: 200
 
 Status range assertions are also supported:
 
-```http
+```md
 #### Assert: Check 2xx status
 Status: 2xx
 ```
@@ -77,7 +77,7 @@ Status: 2xx
 
 Assert response headers:
 
-```http
+```md
 ### GET all users
 GET {{host}}/users
 
@@ -90,7 +90,7 @@ Content-Type: application/json
 
 Use JSONPath to assert specific values in the response body:
 
-```http
+```md
 ### GET all users
 GET {{host}}/users
 
@@ -105,7 +105,7 @@ $[0].name: John Doe
 
 Save values from the response to use in subsequent requests:
 
-```http
+```md
 ### POST new user
 POST {{host}}/users
 Content-Type: application/json
@@ -127,7 +127,7 @@ $.name: Alice Johnson
 
 Use `@name` directive to reference responses from previous requests:
 
-```http
+```md
 ### Create user
 # @name createUser
 POST {{host}}/users
@@ -173,7 +173,7 @@ Built-in dynamic variables:
 
 Validate response body against JSON Schema:
 
-```http
+```md
 ### Get user
 GET {{host}}/users/1
 
@@ -192,7 +192,7 @@ _JsonSchema: {
 
 Or reference an external schema file:
 
-```http
+```md
 #### Assert: Validate with schema file
 _JsonSchema: ./schemas/user.schema.json
 ```
@@ -217,7 +217,7 @@ module.exports = function(response, context) {
 
 Usage in .http files:
 
-```http
+```md
 ### Verify user data
 GET {{host}}/users/{{newUserId}}
 
@@ -230,7 +230,7 @@ _CustomAssert: ./validation.js
 
 Test file uploads using `multipart/form-data`:
 
-```http
+```md
 ### Upload file
 POST {{host}}/upload
 Content-Type: multipart/form-data; boundary=---boundary
@@ -243,7 +243,7 @@ This is the content of the file.
 
 Load request body from external file:
 
-```http
+```md
 ### POST with external body
 POST {{host}}/api/data
 Content-Type: application/json
@@ -270,7 +270,7 @@ http-test tests.http --var variables.json
 
 Or inline in .http files:
 
-```http
+```md
 @host = http://localhost:3000
 @apiKey = your-api-key
 
@@ -283,7 +283,7 @@ Authorization: Bearer {{apiKey}}
 
 Test error scenarios with `@expectError`:
 
-```http
+```md
 ### Test 404 error
 # @expectError
 GET {{host}}/nonexistent
